@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Synthetic User Data Generator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            mono: ['JetBrains Mono', 'Fira Code', 'Consolas', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace; }
+    .json-key { color: #4f46e5; }
+    .json-string { color: #059669; }
+    .json-number { color: #d97706; }
+    .json-boolean { color: #7c3aed; }
+    .json-null { color: #6b7280; }
+    pre { white-space: pre-wrap; word-break: break-word; }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+    <!-- Header -->
+    <header class="mb-8 sm:mb-10">
+      <div class="flex items-center gap-3 mb-2">
+        <div class="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight">
+          Synthetic User Data Generator
+        </h1>
+      </div>
+      <p class="text-slate-500 text-sm sm:text-base ml-13">
+        Generate realistic test data for automation and QA. Specify record count, then generate JSON or export CSV.
+      </p>
+    </header>
+
+    <!-- Controls -->
+    <section class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 sm:p-6 mb-6">
+      <h2 class="text-sm font-semibold text-slate-700 uppercase tracking-wider mb-4">Configuration</h2>
+      <div class="flex flex-col sm:flex-row sm:items-end gap-4">
+        <div class="flex-1">
+          <label for="recordCount" class="block text-sm font-medium text-slate-600 mb-1.5">Number of records</label>
+          <input
+            type="number"
+            id="recordCount"
+            min="1"
+            max="1000"
+            value="10"
+            class="w-full sm:max-w-[180px] px-4 py-2.5 rounded-lg border border-slate-300 text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm"
+          />
+        </div>
+        <div class="flex flex-wrap gap-2 sm:gap-3">
+          <button
+            id="btnGenerate"
+            class="px-5 py-2.5 rounded-lg bg-indigo-600 text-white font-medium text-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors"
+          >
+            Generate
+          </button>
+          <button
+            id="btnCopy"
+            class="px-5 py-2.5 rounded-lg border border-slate-300 text-slate-700 font-medium text-sm hover:bg-slate-50 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled
+          >
+            Copy JSON
+          </button>
+          <button
+            id="btnDownloadCsv"
+            class="px-5 py-2.5 rounded-lg border border-slate-300 text-slate-700 font-medium text-sm hover:bg-slate-50 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled
+          >
+            Download CSV
+          </button>
+          <button
+            id="btnClear"
+            class="px-5 py-2.5 rounded-lg border border-slate-300 text-slate-700 font-medium text-sm hover:bg-slate-50 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors"
+          >
+            Clear
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Output -->
+    <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="px-5 py-3 border-b border-slate-200 flex items-center justify-between">
+        <span class="text-sm font-medium text-slate-600">Output (JSON)</span>
+        <span id="recordCountLabel" class="text-xs text-slate-400 font-mono">0 records</span>
+      </div>
+      <div class="p-4 sm:p-5 min-h-[200px] max-h-[60vh] overflow-auto bg-slate-900/5">
+        <pre id="jsonOutput" class="font-mono text-sm text-slate-700 p-0 m-0">Generate data to see output.</pre>
+      </div>
+    </section>
+
+    <footer class="mt-6 text-center text-xs text-slate-400">
+      Automation Test Data Tool · For QA and development use only
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      const FIRST_NAMES = [
+        'James', 'Emma', 'Liam', 'Olivia', 'Noah', 'Ava', 'Oliver', 'Sophia', 'Elijah', 'Isabella',
+        'Lucas', 'Mia', 'Mason', 'Charlotte', 'Ethan', 'Amelia', 'Alexander', 'Harper', 'Henry', 'Evelyn'
+      ];
+      const LAST_NAMES = [
+        'Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez',
+        'Wilson', 'Anderson', 'Taylor', 'Thomas', 'Moore', 'Jackson', 'Martin', 'Lee', 'Thompson', 'White'
+      ];
+      const DOMAINS = ['example.com', 'testmail.org', 'automation.dev', 'qa-lab.io', 'staging.net'];
+
+      const recordCountInput = document.getElementById('recordCount');
+      const jsonOutput = document.getElementById('jsonOutput');
+      const recordCountLabel = document.getElementById('recordCountLabel');
+      const btnGenerate = document.getElementById('btnGenerate');
+      const btnCopy = document.getElementById('btnCopy');
+      const btnDownloadCsv = document.getElementById('btnDownloadCsv');
+      const btnClear = document.getElementById('btnClear');
+
+      let currentData = [];
+
+      function randomInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+      }
+
+      function randomChoice(arr) {
+        return arr[randomInt(0, arr.length - 1)];
+      }
+
+      function randomTimestampWithinDays(daysAgo) {
+        const now = Date.now();
+        const past = now - daysAgo * 24 * 60 * 60 * 1000;
+        const ts = new Date(randomInt(past, now));
+        return ts.toISOString();
+      }
+
+      function generateEmail(fullName) {
+        const base = fullName.toLowerCase().replace(/\s+/g, '.');
+        const suffix = randomInt(1, 999);
+        const domain = randomChoice(DOMAINS);
+        return `${base}${suffix}@${domain}`;
+      }
+
+      function generateRecord(id) {
+        const firstName = randomChoice(FIRST_NAMES);
+        const lastName = randomChoice(LAST_NAMES);
+        const fullName = `${firstName} ${lastName}`;
+        const email = generateEmail(fullName);
+        const status = randomChoice(['Active', 'Inactive']);
+        const lastLogin = status === 'Active'
+          ? randomTimestampWithinDays(90)
+          : (Math.random() > 0.5 ? randomTimestampWithinDays(365) : null);
+        return {
+          User_ID: id,
+          Full_Name: fullName,
+          Email: email,
+          Account_Status: status,
+          Last_Login: lastLogin
+        };
+      }
+
+      function generate() {
+        const count = Math.min(1000, Math.max(1, parseInt(recordCountInput.value, 10) || 10));
+        recordCountInput.value = count;
+        currentData = Array.from({ length: count }, (_, i) => generateRecord(i + 1));
+        renderJson(currentData);
+        recordCountLabel.textContent = `${count} record${count !== 1 ? 's' : ''}`;
+        btnCopy.disabled = false;
+        btnDownloadCsv.disabled = false;
+      }
+
+      function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+      }
+
+      function syntaxHighlight(obj) {
+        const json = JSON.stringify(obj, null, 2);
+        return json
+          .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?)/g, (match) => {
+            let cls = 'json-string';
+            if (match.endsWith(':')) cls = 'json-key';
+            return '<span class="' + cls + '">' + escapeHtml(match) + '</span>';
+          })
+          .replace(/\b(true|false)\b/g, (m) => '<span class="json-boolean">' + m + '</span>')
+          .replace(/\b(null)\b/g, (m) => '<span class="json-null">' + m + '</span>')
+          .replace(/\b(-?\d+\.?\d*)\b/g, (m) => '<span class="json-number">' + m + '</span>');
+      }
+
+      function renderJson(data) {
+        if (!data || data.length === 0) {
+          jsonOutput.innerHTML = 'Generate data to see output.';
+          jsonOutput.classList.remove('font-mono');
+          return;
+        }
+        jsonOutput.classList.add('font-mono');
+        jsonOutput.innerHTML = syntaxHighlight(data);
+      }
+
+      function clearOutput() {
+        currentData = [];
+        jsonOutput.innerHTML = 'Generate data to see output.';
+        jsonOutput.classList.remove('font-mono');
+        recordCountLabel.textContent = '0 records';
+        recordCountInput.value = '10';
+        btnCopy.disabled = true;
+        btnDownloadCsv.disabled = true;
+      }
+
+      function copyJson() {
+        if (currentData.length === 0) return;
+        const raw = JSON.stringify(currentData, null, 2);
+        navigator.clipboard.writeText(raw).then(() => {
+          const orig = btnCopy.textContent;
+          btnCopy.textContent = 'Copied!';
+          setTimeout(() => { btnCopy.textContent = orig; }, 1500);
+        });
+      }
+
+      function downloadCsv() {
+        if (currentData.length === 0) return;
+        const headers = ['User_ID', 'Full_Name', 'Email', 'Account_Status', 'Last_Login'];
+        const escapeCsv = (v) => {
+          const s = v == null ? '' : String(v);
+          return s.includes(',') || s.includes('"') || s.includes('\n')
+            ? '"' + s.replace(/"/g, '""') + '"'
+            : s;
+        };
+        const rows = [headers.join(','), ...currentData.map((r) =>
+          headers.map((h) => escapeCsv(r[h])).join(',')
+        )];
+        const blob = new Blob([rows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `synthetic-users-${Date.now()}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      btnGenerate.addEventListener('click', generate);
+      btnCopy.addEventListener('click', copyJson);
+      btnDownloadCsv.addEventListener('click', downloadCsv);
+      btnClear.addEventListener('click', clearOutput);
+      recordCountInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') generate(); });
+    })();
+  </script>
+</body>
+</html>
